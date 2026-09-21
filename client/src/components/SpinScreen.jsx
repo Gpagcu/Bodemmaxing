@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { spinQuest, completeQuest } from '../api'
 
 // The core loop of the app: spin, get a quest, do it (or don't), mark it done.
-// Kept to three states rather than the full loading/ready/error/empty set
-// from App.jsx, because there is no list to be empty here — only "nothing
-// drawn yet", "drawn", and "something went wrong".
+//
+// The capsule is keyed on the quest's id (or 'idle' when there is none) so
+// that React remounts it — and therefore replays its CSS animation — every
+// time a new quest is drawn, rather than only on the very first render.
 
 export default function SpinScreen() {
   const [quest, setQuest] = useState(null)
@@ -38,6 +39,13 @@ export default function SpinScreen() {
     }
   }
 
+  const capsuleClass = [
+    'capsule',
+    quest ? `rarity-${quest.rarity}` : '',
+    spinning ? 'spinning' : '',
+    !spinning && quest ? 'landed' : '',
+  ].filter(Boolean).join(' ')
+
   return (
     <section className="card">
       <h2>Spin for a quest</h2>
@@ -48,6 +56,10 @@ export default function SpinScreen() {
           {error.message} <button onClick={handleSpin}>Try again</button>
         </p>
       )}
+
+      <div className="capsule-wrap">
+        <div key={quest?.id ?? 'idle'} className={capsuleClass} aria-hidden="true" />
+      </div>
 
       <button onClick={handleSpin} disabled={spinning} className="spin-button">
         {spinning ? 'Spinning...' : quest ? 'Spin again' : 'Spin'}
@@ -71,3 +83,4 @@ export default function SpinScreen() {
     </section>
   )
 }
+

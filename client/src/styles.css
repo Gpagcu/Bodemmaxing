@@ -1,127 +1,420 @@
-/* Deliberately plain. Module 3 covered styling in React properly: CSS modules,
-   Tailwind, styled-components, a component library. Replace this with whichever
-   you chose and can defend. */
+/* Bordemmaxing — styles.css
+   A toy-capsule-machine aesthetic: deep plum background, rarity colors as
+   the core information system (not decoration), one bold animated moment
+   (the capsule) with everything else kept quiet and functional. */
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700&family=Inter:wght@400;500;600&display=swap');
 
 :root {
-  color-scheme: light dark;
-  --bg: #fbfbfd;
-  --fg: #1a1a1f;
-  --muted: #5c5c6b;
-  --line: #dcdce6;
-  --card: #ffffff;
-  --accent: #4a3f8f;
-  --warn-bg: #fff6dd;
-  --warn-line: #e0bf6a;
-  --error-bg: #fdeaea;
-  --error-line: #d98a8a;
+  --bg: #1B1023;
+  --surface: #2A1734;
+  --surface-raised: #341D40;
+  --text: #F5EDE3;
+  --muted: #B7A6C4;
+  --border: #4A3358;
+  --accent: #FF6F91;
+  --accent-dark: #E0577A;
+  --error-bg: #3A1620;
+  --error-text: #FFB4C2;
+
+  --rarity-common: #8C97A8;
+  --rarity-uncommon: #4CAF7D;
+  --rarity-rare: #4A90D9;
+  --rarity-epic: #B166E0;
+  --rarity-legendary: #F2B705;
+  --rarity-unique: #FF6F91;
+
+  --font-display: 'Baloo 2', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14141a;
-    --fg: #ececf2;
-    --muted: #a0a0b0;
-    --line: #33333f;
-    --card: #1d1d25;
-    --accent: #a99cf0;
-    --warn-bg: #3a3320;
-    --warn-line: #7d6a30;
-    --error-bg: #3a2323;
-    --error-line: #7d4040;
-  }
+* {
+  box-sizing: border-box;
 }
-
-* { box-sizing: border-box; }
 
 body {
   margin: 0;
   background: var(--bg);
-  color: var(--fg);
-  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
 }
 
-.page { max-width: 44rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
 
-h1 { margin: 0 0 .25rem; font-size: 1.9rem; }
-h2 { margin: 0 0 .75rem; font-size: 1.15rem; }
-h3 { margin: 0; font-size: 1.05rem; }
+header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
 
-.lede, .muted { color: var(--muted); }
-.lede { margin-top: 0; }
+header h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.25rem;
+  margin: 0 0 0.4rem;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
 
+.lede {
+  color: var(--muted);
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* --- demo notice (from the template, restyled to fit) --- */
 .demo-notice {
-  background: var(--warn-bg);
-  border: 1px solid var(--warn-line);
-  border-radius: .5rem;
-  padding: .9rem 1rem;
-  margin: 1.5rem 0;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+.demo-notice strong {
+  color: var(--text);
+}
+
+/* --- tabs, styled like physical arcade buttons --- */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  border-radius: 10px 10px 4px 4px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 3px solid var(--border);
+  transition: transform 0.1s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--bg);
+  background: var(--accent);
+  border-bottom-color: var(--accent-dark);
+}
+
+.tab:active {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+}
+
+/* --- cards --- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.card h2 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--muted);
 }
 
 .error {
   background: var(--error-bg);
-  border: 1px solid var(--error-line);
-  border-radius: .5rem;
-  padding: .75rem 1rem;
+  color: var(--error-text);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
 }
 
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: .5rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
+.error button {
+  margin-left: 0.5rem;
 }
 
-form.card { display: flex; flex-direction: column; gap: .35rem; }
+/* --- forms --- */
+form label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0.75rem 0 0.3rem;
+}
 
-label { font-size: .85rem; color: var(--muted); margin-top: .5rem; }
-
-input, textarea {
-  font: inherit;
-  color: inherit;
+form input,
+form textarea {
+  width: 100%;
   background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: .35rem;
-  padding: .5rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+form input:focus,
+form textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 button {
-  font: inherit;
-  cursor: pointer;
-  border: 1px solid var(--accent);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
   background: var(--accent);
-  color: #fff;
-  border-radius: .35rem;
-  padding: .45rem .9rem;
-  margin-top: .75rem;
-  align-self: flex-start;
+  color: var(--bg);
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
 }
 
-button:disabled { opacity: .6; cursor: default; }
+button:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
 
-/* Never remove a focus outline without replacing it. Keyboard users need to
-   see where they are, and it is checked. */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
 
-.list { list-style: none; padding: 0; margin: 0; }
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 
-.row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+form button {
+  margin-top: 1rem;
+}
 
-.spooky { color: var(--accent); letter-spacing: .15em; }
+/* --- lists --- */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
-.card footer {
+.row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.quest-text {
+  font-size: 1.05rem;
+  margin: 0.3rem 0;
+}
+
+footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  margin-top: .5rem;
-  font-size: .85rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
   color: var(--muted);
 }
 
-.card footer button {
-  margin-top: 0;
-  background: transparent;
-  color: var(--muted);
-  border-color: var(--line);
+/* --- rarity badges: the core information system --- */
+.rarity-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  color: var(--bg);
+  white-space: nowrap;
+}
+
+.rarity-badge.rarity-common,
+.rarity-common .rarity-badge { background: var(--rarity-common); }
+.rarity-badge.rarity-uncommon,
+.rarity-uncommon .rarity-badge { background: var(--rarity-uncommon); }
+.rarity-badge.rarity-rare,
+.rarity-rare .rarity-badge { background: var(--rarity-rare); }
+.rarity-badge.rarity-epic,
+.rarity-epic .rarity-badge { background: var(--rarity-epic); }
+.rarity-badge.rarity-legendary,
+.rarity-legendary .rarity-badge { background: var(--rarity-legendary); }
+.rarity-badge.rarity-unique,
+.rarity-unique .rarity-badge { background: var(--rarity-unique); }
+
+.quest-result {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: var(--surface-raised);
+  text-align: center;
+}
+.quest-result.rarity-common { border-color: var(--rarity-common); }
+.quest-result.rarity-uncommon { border-color: var(--rarity-uncommon); }
+.quest-result.rarity-rare { border-color: var(--rarity-rare); }
+.quest-result.rarity-epic { border-color: var(--rarity-epic); }
+.quest-result.rarity-legendary { border-color: var(--rarity-legendary); }
+.quest-result.rarity-unique { border-color: var(--rarity-unique); }
+
+/* --- the spin button and capsule: the one bold animated moment --- */
+.spin-button {
+  display: block;
+  margin: 0.5rem auto 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  padding: 0.75rem 2rem;
+}
+
+.capsule-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0 0.5rem;
+}
+
+.capsule {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.capsule::before,
+.capsule::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+}
+.capsule::before {
+  top: 0;
+  background: var(--muted);
+  opacity: 0.35;
+}
+.capsule::after {
+  bottom: 0;
+  background: var(--surface);
+}
+
+.capsule.rarity-common::before { background: var(--rarity-common); opacity: 1; }
+.capsule.rarity-uncommon::before { background: var(--rarity-uncommon); opacity: 1; }
+.capsule.rarity-rare::before { background: var(--rarity-rare); opacity: 1; }
+.capsule.rarity-epic::before { background: var(--rarity-epic); opacity: 1; }
+.capsule.rarity-legendary::before { background: var(--rarity-legendary); opacity: 1; }
+.capsule.rarity-unique::before { background: var(--rarity-unique); opacity: 1; }
+
+.capsule.spinning {
+  animation: capsule-shake 0.4s ease-in-out infinite;
+}
+
+.capsule.landed {
+  animation: capsule-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes capsule-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-4px) rotate(-8deg); }
+  75% { transform: translateX(4px) rotate(8deg); }
+}
+
+@keyframes capsule-pop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capsule.spinning,
+  .capsule.landed {
+    animation: none;
+  }
+}
+
+/* --- responsive --- */
+
+/* Comfortable tap targets on touch devices, regardless of screen size. */
+button {
+  min-height: 44px;
+}
+
+.tab {
+  min-height: 44px;
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  header h1 {
+    font-size: 1.75rem;
+  }
+
+  .lede {
+    font-size: 0.95rem;
+  }
+
+  .tabs {
+    gap: 0.35rem;
+  }
+
+  .tab {
+    font-size: 0.85rem;
+    padding: 0.6rem 0.35rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .capsule {
+    width: 60px;
+    height: 60px;
+  }
+
+  .spin-button {
+    width: 100%;
+  }
+
+  /* Long quest text next to a rarity badge needs room to wrap onto its own
+     line rather than squeezing both into one row. */
+  .row-head {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 340px) {
+  .tabs {
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    flex: 1 1 45%;
+  }
 }
