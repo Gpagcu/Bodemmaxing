@@ -52,7 +52,7 @@ activeTab	'spin' | 'add' | 'history'	App	user clicks a tab
 
 Each screen (Spin, Add Quest, History) owns its own data independently — none of it needs to be shared upward into App, since no two screens read or write the same piece of state. App only owns which tab is active.
 
-What each screen contains
+# What each screen contains
 
 Screen: Spin
 
@@ -60,7 +60,8 @@ Block 1: Heading + short description ("Bored? Pull the lever and see what you ge
 Block 2: Spin button (label changes between "Spin" / "Spin again" / "Spinning...")
 Block 3: Result card — rarity badge, quest text, category, and a "Mark as done" button (or a "✓ Completed" state once done)
 Block 4: Inline error message with a retry button, shown only on failure
-Content you need to gather
+
+# Content you need to gather
 50 preset quests, written across 5 rarity tiers — done, seeded into the database (server/db/seed.sql)
 Rarity tier names and pull-weight values (common/uncommon/rare/epic/ legendary, plus unique for user-added quests) — done
 Screenshots of the working UI, once styled
