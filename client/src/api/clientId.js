@@ -11,4 +11,4 @@ export function getClientId() {
     localStorage.setItem(KEY, id)
   }
   return id
-}
+} 
