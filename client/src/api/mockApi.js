@@ -10,66 +10,148 @@
 
 import seed from './seed.json'
 
-const KEY = 'final-project:sightings'
+const QUESTS_KEY = 'final-project:quests'
+const HISTORY_KEY = 'final-project:quest-history'
 
 // A real network is not instant. Keeping this delay is what forces you to build
 // a loading state now, while it is cheap, instead of discovering you need one
 // the day you switch to the real API.
 const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function read() {
-  const stored = localStorage.getItem(KEY)
+// Mirrors the rarity weighting used server-side, so the demo build "feels"
+// the same as the real API even though it never talks to it.
+const RARITY_WEIGHTS = { common: 45, uncommon: 28, rare: 15, epic: 9, legendary: 3 }
+const UNIQUE_PULL_CHANCE = 0.15
+
+function readQuests() {
+  const stored = localStorage.getItem(QUESTS_KEY)
   if (stored) {
     try {
       return JSON.parse(stored)
     } catch {
       // Corrupted storage. Start again rather than crashing the app.
-      localStorage.removeItem(KEY)
+      localStorage.removeItem(QUESTS_KEY)
     }
   }
-  localStorage.setItem(KEY, JSON.stringify(seed))
+  localStorage.setItem(QUESTS_KEY, JSON.stringify(seed))
   return seed
 }
 
-function write(rows) {
-  localStorage.setItem(KEY, JSON.stringify(rows))
+function writeQuests(rows) {
+  localStorage.setItem(QUESTS_KEY, JSON.stringify(rows))
   return rows
 }
 
-export async function listSightings() {
-  await delay()
-  return read().slice().sort((a, b) => b.reported_at.localeCompare(a.reported_at))
+function readHistory() {
+  const stored = localStorage.getItem(HISTORY_KEY)
+  if (!stored) return []
+  try {
+    return JSON.parse(stored)
+  } catch {
+    localStorage.removeItem(HISTORY_KEY)
+    return []
+  }
 }
 
-export async function getSighting(id) {
-  await delay()
-  const found = read().find((row) => String(row.id) === String(id))
-  if (!found) throw new Error('Not found')
-  return found
+function writeHistory(rows) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(rows))
+  return rows
 }
 
-export async function createSighting(input) {
+function pickWeightedRarity(counts) {
+  const available = Object.entries(counts).filter(([, count]) => count > 0)
+  if (available.length === 0) return null
+
+  const totalWeight = available.reduce((sum, [rarity]) => sum + (RARITY_WEIGHTS[rarity] || 0), 0)
+  let roll = Math.random() * totalWeight
+
+  for (const [rarity] of available) {
+    roll -= RARITY_WEIGHTS[rarity] || 0
+    if (roll <= 0) return rarity
+  }
+  return available[available.length - 1][0]
+}
+
+export async function listQuests({ rarity, category } = {}) {
+  await delay()
+  let rows = readQuests()
+  if (rarity) rows = rows.filter((row) => row.rarity === rarity)
+  if (category) rows = rows.filter((row) => row.category === category)
+  return rows.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))
+}
+
+export async function spinQuest() {
+  await delay()
+  const rows = readQuests()
+
+  const uniqueRows = rows.filter((row) => row.rarity === 'unique')
+  if (uniqueRows.length > 0 && Math.random() < UNIQUE_PULL_CHANCE) {
+    return uniqueRows[Math.floor(Math.random() * uniqueRows.length)]
+  }
+
+  const presets = rows.filter((row) => row.is_preset)
+  const counts = {}
+  for (const row of presets) {
+    counts[row.rarity] = (counts[row.rarity] || 0) + 1
+  }
+
+  const chosenRarity = pickWeightedRarity(counts)
+  if (!chosenRarity) throw new Error('No quests available')
+
+  const pool = presets.filter((row) => row.rarity === chosenRarity)
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+export async function createQuest(input) {
   await delay()
   const created = {
-    ...input,
     id: crypto.randomUUID(),
-    reported_at: new Date().toISOString(),
+    text: input.text,
+    category: input.category || null,
+    rarity: 'unique',
+    is_preset: false,
+    user_id: 'local',
+    is_completed: false,
+    date_completed: null,
+    created_at: new Date().toISOString(),
   }
-  write([...read(), created])
+  writeQuests([...readQuests(), created])
   return created
 }
 
-export async function updateSighting(id, input) {
+export async function completeQuest(id) {
   await delay()
-  const rows = read()
+  const rows = readQuests()
   const index = rows.findIndex((row) => String(row.id) === String(id))
   if (index === -1) throw new Error('Not found')
-  rows[index] = { ...rows[index], ...input }
-  write(rows)
+
+  rows[index] = { ...rows[index], is_completed: true, date_completed: new Date().toISOString() }
+  writeQuests(rows)
+
+  writeHistory([
+    {
+      id: crypto.randomUUID(),
+      text: rows[index].text,
+      rarity: rows[index].rarity,
+      category: rows[index].category,
+      completed_at: rows[index].date_completed,
+    },
+    ...readHistory(),
+  ])
+
   return rows[index]
 }
 
-export async function deleteSighting(id) {
+export async function deleteQuest(id) {
   await delay()
-  write(read().filter((row) => String(row.id) !== String(id)))
+  const rows = readQuests()
+  const target = rows.find((row) => String(row.id) === String(id))
+  if (target && !target.is_preset) {
+    writeQuests(rows.filter((row) => String(row.id) !== String(id)))
+  }
+}
+
+export async function listHistory() {
+  await delay()
+  return readHistory()
 }

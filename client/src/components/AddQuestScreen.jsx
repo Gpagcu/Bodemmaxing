@@ -1,0 +1,122 @@
+import { useEffect, useState } from 'react'
+import { listQuests, createQuest, deleteQuest } from '../api'
+
+const EMPTY_FORM = { text: '', category: '' }
+
+export default function AddQuestScreen() {
+  const [status, setStatus] = useState('loading')   // loading | ready | error
+  const [rows, setRows] = useState([])
+  const [error, setError] = useState(null)
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [saving, setSaving] = useState(false)
+
+  async function load() {
+    setStatus('loading')
+    setError(null)
+    try {
+      const all = await listQuests()
+      setRows(all.filter((row) => !row.is_preset))
+      setStatus('ready')
+    } catch (caught) {
+      setError(caught)
+      setStatus('error')
+    }
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (!form.text.trim()) return
+
+    setSaving(true)
+    try {
+      const created = await createQuest({
+        text: form.text.trim(),
+        category: form.category.trim() || null,
+      })
+      setRows([created, ...rows])
+      setForm(EMPTY_FORM)
+    } catch (caught) {
+      setError(caught)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete(id) {
+    const previous = rows
+    setRows(rows.filter((row) => row.id !== id))   // optimistic
+    try {
+      await deleteQuest(id)
+    } catch (caught) {
+      setRows(previous)                            // put it back on failure
+      setError(caught)
+    }
+  }
+
+  return (
+    <section>
+      {error && (
+        <p className="error" role="alert">
+          {error.message} <button onClick={load}>Try again</button>
+        </p>
+      )}
+
+      <form onSubmit={handleSubmit} className="card">
+        <h2>Add a quest</h2>
+        <p className="muted">
+          Your own quests get pulled into the spin alongside the presets.
+        </p>
+
+        <label htmlFor="text">Quest</label>
+        <input
+          id="text"
+          value={form.text}
+          onChange={(event) => setForm({ ...form, text: event.target.value })}
+          maxLength={200}
+          placeholder="e.g. Learn to juggle three items"
+          required
+        />
+
+        <label htmlFor="category">Category (optional)</label>
+        <input
+          id="category"
+          value={form.category}
+          onChange={(event) => setForm({ ...form, category: event.target.value })}
+          maxLength={40}
+          placeholder="creative, physical, social, weird..."
+        />
+
+        <button type="submit" disabled={saving}>
+          {saving ? 'Adding...' : 'Add quest'}
+        </button>
+      </form>
+
+      {status === 'loading' && <p className="muted">Loading your quests...</p>}
+
+      {status === 'ready' && rows.length === 0 && (
+        <p className="muted">You haven't added any quests yet.</p>
+      )}
+
+      {status === 'ready' && rows.length > 0 && (
+        <ul className="list">
+          {rows.map((row) => (
+            <li key={row.id} className="card">
+              <div className="row-head">
+                <p className="quest-text">{row.text}</p>
+                <span className="rarity-badge rarity-unique">unique</span>
+              </div>
+              {row.category && <p className="muted">Category: {row.category}</p>}
+              <footer>
+                <button onClick={() => handleDelete(row.id)}>Delete</button>
+              </footer>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}

@@ -3,11 +3,17 @@
 // This is the file that matters for your finals project. mockApi.js exists so
 // you can build the interface before this has anywhere to point.
 
+import { getClientId } from './clientId.js'
+
 const BASE = import.meta.env.VITE_API_BASE_URL || ''
 
-async function request(path, options) {
+async function request(path, options = {}) {
   const response = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-id': getClientId(),
+      ...(options.headers || {}),
+    },
     ...options,
   })
 
@@ -26,15 +32,23 @@ async function request(path, options) {
   return response.status === 204 ? null : response.json()
 }
 
-export const listSightings = () => request('/api/sightings')
+export const listQuests = ({ rarity, category } = {}) => {
+  const params = new URLSearchParams()
+  if (rarity) params.set('rarity', rarity)
+  if (category) params.set('category', category)
+  const qs = params.toString()
+  return request(`/api/quests${qs ? `?${qs}` : ''}`)
+}
 
-export const getSighting = (id) => request(`/api/sightings/${id}`)
+export const spinQuest = () => request('/api/quests/spin')
 
-export const createSighting = (input) =>
-  request('/api/sightings', { method: 'POST', body: JSON.stringify(input) })
+export const createQuest = (input) =>
+  request('/api/quests', { method: 'POST', body: JSON.stringify(input) })
 
-export const updateSighting = (id, input) =>
-  request(`/api/sightings/${id}`, { method: 'PUT', body: JSON.stringify(input) })
+export const completeQuest = (id) =>
+  request(`/api/quests/${id}/complete`, { method: 'PATCH' })
 
-export const deleteSighting = (id) =>
-  request(`/api/sightings/${id}`, { method: 'DELETE' })
+export const deleteQuest = (id) =>
+  request(`/api/quests/${id}`, { method: 'DELETE' })
+
+export const listHistory = () => request('/api/history')
