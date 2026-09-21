@@ -1,128 +1,124 @@
-import express from 'express'
-import cors from 'cors'
-import { pool } from './db/pool.js'
-import * as sightings from './sightingsRepo.js'
+// server/server.js
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import {
+  getAllQuests,
+  addUserQuest,
+  spinForQuest,
+  completeQuest,
+  getHistory,
+  deleteUserQuest,
+} from './questsRepo.js';
+import pool from './db/pool.js';
 
-const app = express()
+// Load .env from server/.env regardless of where `node` was run from.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
-// CORS before the routes. Middleware registered after a route never sees that
-// route's requests, which is the m4 lesson showing up in production.
-//
-// Name your origins. app.use(cors()) with no options sends
-// Access-Control-Allow-Origin: *, which lets any site on the internet call this
-// API from a visitor's browser, and is incompatible with cookies.
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
+const app = express();
+
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean)
+  .map((o) => o.trim())
+  .filter(Boolean);
 
-app.use(cors({ origin: allowedOrigins }))
-app.use(express.json({ limit: '100kb' }))
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true }));
+app.use(express.json());
 
-// Is the process alive?
-app.get('/healthz', (request, response) => {
-  response.json({ ok: true })
-})
+// Do NOT set PORT in .env — the host sets it in production. This fallback is for local dev only.
+const PORT = process.env.PORT || 4000;
+const isProd = process.env.NODE_ENV === 'production';
 
-// Is the database reachable? A different question, and the one that tells you
-// in two seconds which half of a problem you have.
-app.get('/readyz', async (request, response) => {
-  try {
-    await pool.query('SELECT 1')
-    response.json({ ok: true, db: 'up' })
-  } catch (error) {
-    console.error('readyz failed:', error.message)
-    response.status(503).json({ ok: false, db: 'down' })
-  }
-})
-
-// Validation lives on the server because the client can be bypassed. The
-// browser form is for a fast, friendly message; this is for correctness.
-function validate(body) {
-  const errors = []
-  const place = typeof body.place === 'string' ? body.place.trim() : ''
-  const description =
-    typeof body.description === 'string' ? body.description.trim() : ''
-  const spookiness = Number(body.spookiness)
-
-  if (!place) errors.push('place is required')
-  if (place.length > 120) errors.push('place must be 120 characters or fewer')
-  if (description.length > 2000) errors.push('description must be 2000 characters or fewer')
-  if (!Number.isInteger(spookiness) || spookiness < 1 || spookiness > 5) {
-    errors.push('spookiness must be a whole number from 1 to 5')
-  }
-
-  return { errors, value: { place, description, spookiness } }
+// For this course project, a simple query-param or header user id is enough —
+// no full auth system needed. Swap for real auth later if you want.
+function getUserId(req) {
+  return req.query.userId || req.headers['x-user-id'] || 'demo-user';
 }
 
-app.get('/api/sightings', async (request, response, next) => {
+// Used by deployment platforms (and the course template's own docs) to check
+// the API is up and can actually reach the database, not just that the
+// process is running.
+app.get('/healthz', async (req, res) => {
   try {
-    response.json(await sightings.getAll(pool))
-  } catch (error) {
-    next(error)
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok' });
+  } catch (err) {
+    console.error(err);
+    res.status(503).json({ status: 'error', error: 'Database unreachable' });
   }
-})
+});
 
-app.get('/api/sightings/:id', async (request, response, next) => {
+app.get('/api/quests', async (req, res) => {
   try {
-    const row = await sightings.getById(pool, request.params.id)
-    if (!row) return response.status(404).json({ error: 'Not found' })
-    response.json(row)
-  } catch (error) {
-    next(error)
+    const { rarity, category } = req.query;
+    const quests = await getAllQuests({ userId: getUserId(req), rarity, category });
+    res.json(quests);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch quests' });
   }
-})
+});
 
-app.post('/api/sightings', async (request, response, next) => {
-  const { errors, value } = validate(request.body ?? {})
-  if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
-
+app.get('/api/quests/spin', async (req, res) => {
   try {
-    response.status(201).json(await sightings.create(pool, value))
-  } catch (error) {
-    next(error)
+    const quest = await spinForQuest(getUserId(req));
+    if (!quest) return res.status(404).json({ error: 'No quests available' });
+    res.json(quest);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to spin for a quest' });
   }
-})
+});
 
-app.put('/api/sightings/:id', async (request, response, next) => {
-  const { errors, value } = validate(request.body ?? {})
-  if (errors.length > 0) return response.status(400).json({ error: errors.join('; ') })
-
+app.post('/api/quests', async (req, res) => {
   try {
-    const row = await sightings.update(pool, request.params.id, value)
-    if (!row) return response.status(404).json({ error: 'Not found' })
-    response.json(row)
-  } catch (error) {
-    next(error)
+    const { text, category } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'Quest text is required' });
+    }
+    const quest = await addUserQuest({ text, category, userId: getUserId(req) });
+    res.status(201).json(quest);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to add quest' });
   }
-})
+});
 
-app.delete('/api/sightings/:id', async (request, response, next) => {
+app.patch('/api/quests/:id/complete', async (req, res) => {
   try {
-    const removed = await sightings.remove(pool, request.params.id)
-    if (!removed) return response.status(404).json({ error: 'Not found' })
-    response.status(204).end()
-  } catch (error) {
-    next(error)
+    const quest = await completeQuest(req.params.id, getUserId(req));
+    if (!quest) return res.status(404).json({ error: 'Quest not found' });
+    res.json(quest);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to complete quest' });
   }
-})
+});
 
-app.use((request, response) => {
-  response.status(404).json({ error: 'No such route' })
-})
+app.delete('/api/quests/:id', async (req, res) => {
+  try {
+    const deleted = await deleteUserQuest(req.params.id, getUserId(req));
+    if (!deleted) return res.status(404).json({ error: 'Quest not found or not yours to delete' });
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete quest' });
+  }
+});
 
-// The detail goes in your logs; the visitor gets a plain message. Sending a
-// stack trace to a stranger tells them about your file layout and dependencies.
-app.use((error, request, response, next) => {
-  console.error(error)
-  response.status(500).json({ error: 'Something went wrong on the server' })
-})
+app.get('/api/history', async (req, res) => {
+  try {
+    const history = await getHistory(getUserId(req));
+    res.json(history);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
 
-// The host chooses the port and tells you through PORT. Hardcoding 3000 is the
-// commonest reason a first deploy is marked unhealthy and killed.
-const port = process.env.PORT || 3000
-
-app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`)
-  console.log(`CORS allows: ${allowedOrigins.join(', ')}`)
-})
+app.listen(PORT, () => {
+  console.log(`Bordemmaxing API running on port ${PORT} (${isProd ? 'production' : 'development'})`);
+});

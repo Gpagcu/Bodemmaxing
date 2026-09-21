@@ -1,20 +1,31 @@
--- The complete shape of the database. Safe to run against an empty database,
--- and safe to run twice.
---
--- This file is committed on purpose. Your schema is a fact about your
--- application, not a runtime concern: it should be readable by opening a file
--- rather than by connecting to a server. It is also what lets you move to a
--- hosted database in one command.
+-- Bordemmaxing (Side Quest Gashapon) — schema.sql
 
-CREATE TABLE IF NOT EXISTS sightings (
-  id          SERIAL PRIMARY KEY,
-  place       TEXT        NOT NULL,
-  description TEXT        NOT NULL DEFAULT '',
-  spookiness  INTEGER     NOT NULL CHECK (spookiness BETWEEN 1 AND 5),
-  reported_at TIMESTAMPTZ NOT NULL DEFAULT now()
+DROP TABLE IF EXISTS quest_history;
+DROP TABLE IF EXISTS quests;
+
+CREATE TABLE quests (
+  id             SERIAL PRIMARY KEY,
+  text           TEXT NOT NULL,
+  category       TEXT,                          -- e.g. 'creative', 'physical', 'social', 'weird'
+  rarity         TEXT NOT NULL CHECK (
+                    rarity IN ('common', 'uncommon', 'rare', 'epic', 'legendary', 'unique')
+                 ),
+  is_preset      BOOLEAN NOT NULL DEFAULT FALSE,
+  user_id        TEXT,                          -- NULL for presets; set for user-added quests
+  is_completed   BOOLEAN NOT NULL DEFAULT FALSE,
+  date_completed TIMESTAMP,
+  created_at     TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- The list page always sorts newest first. Without this the database reads
--- every row and sorts it on each request.
-CREATE INDEX IF NOT EXISTS sightings_reported_at_idx
-  ON sightings (reported_at DESC);
+-- Optional: lets a quest be completed more than once with a full log,
+-- instead of a single boolean on the quest itself.
+CREATE TABLE quest_history (
+  id           SERIAL PRIMARY KEY,
+  quest_id     INTEGER NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
+  user_id      TEXT,
+  completed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_quests_rarity ON quests(rarity);
+CREATE INDEX idx_quests_is_preset ON quests(is_preset);
+CREATE INDEX idx_quest_history_quest_id ON quest_history(quest_id);
