@@ -1,156 +1,227 @@
-# Your Project Name
+# Bordemmaxing
 
-> **Replace this whole file.** It is a worked example of the README your project
-> will be graded from, not a file to leave as it is. Start with
-> [START-HERE.md](START-HERE.md).
-
-One sentence saying what this does and who it is for.
-
-**Live site:** https://yourusername.github.io/your-repo-name/
-**API:** https://your-api.onrender.com/healthz
-**Demo video:** (link)
+**Repository:** https://github.com/Gpagcu/Bodemmaxing
+**Live site:** https://gpagcu.github.io/Bodemmaxing/
+**API:** _not yet deployed — running locally at `http://localhost:4000/healthz` during development_
 
 > **This deployment is running in demo mode.** The interface is real; the backend
 > is simulated in your browser so the site works without a server. See
-> [Demo mode](#demo-mode) below. Delete this quote once your API is live.
+> [Demo mode](#demo-mode) below. This notice will be removed once the API is live.
 
-![A screenshot of the main screen](docs/assets/screenshot.png)
+## 1. Overview
 
-## What it does
+Bordemmaxing is a "side quest" app for when you're bored. Instead of picking
+from a static list, you spin a gashapon-style machine that draws a random
+quest for you to do — anything from "drink a glass of water" to a rare or
+"legendary" challenge. Quests are organized by rarity, and you can add your
+own quests to the pool alongside the 50 built-in ones. It's for anyone who
+wants a small, low-stakes nudge to do something different when they're stuck
+in a boredom rut.
 
-- Report a sighting with a place, a description and a spookiness rating
-- Browse everything reported, newest first
-- Delete a report
+## 2. Setup and installation
 
-## Built with
+**Prerequisites:**
+- [Node.js](https://nodejs.org/) (v18 or later recommended)
+- A PostgreSQL database — either a local instance or a free hosted one (this
+  project currently runs against [Neon](https://neon.tech))
+- `npm` (comes with Node.js)
 
-React and Vite on the front end, Express and PostgreSQL on the back end. The
-client is on GitHub Pages, the API on (host), the database on (host).
+**1. Clone the repo:**
+```bash
+git clone https://github.com/Gpagcu/Bodemmaxing.git
+cd Bodemmaxing
+```
+
+**2. Install dependencies:**
+```bash
+cd server
+npm install
+cd ../client
+npm install
+cd ..
+```
+
+**3. Environment and configuration**
+
+Copy the example env files and fill them in:
+```bash
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+```
+
+Variables needed in `server/.env`:
+
+| Variable | Example | Notes |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://user:pass@host/dbname?sslmode=require` | Your Postgres connection string (local or hosted) |
+| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins, no trailing slash |
+| `NODE_ENV` | `development` | Set to `production` on a deployed host |
+| `PORT` | _(leave unset locally)_ | The host sets this in production; defaults to `4000` locally |
+
+Variables needed in `client/.env`:
+
+| Variable | Example | Notes |
+|---|---|---|
+| `VITE_USE_MOCK_API` | `false` | Only the exact string `false` turns off demo mode; unset means the app runs on a simulated in-browser backend |
+| `VITE_API_BASE_URL` | `http://localhost:4000` | The Express API's URL, no trailing slash |
+
+**Never commit real credentials.** `.env` files are git-ignored; only the
+`.env.example` files (with placeholders) are committed.
+
+**4. Set up and seed the database**
+
+Run the schema, then the seed data, against your Postgres instance (via
+`psql`, or a hosted provider's SQL editor):
+```bash
+psql <your-database-url> -f server/db/schema.sql
+psql <your-database-url> -f server/db/seed.sql
+```
+This creates the `quests` and `quest_history` tables and inserts 50 preset
+quests spread across five rarity tiers.
+
+## 3. How to run it
+
+**Start the API:**
+```bash
+node server/server.js
+```
+You should see:
+```
+Bordemmaxing API running on port 4000 (development)
+```
+
+**Start the client** (in a separate terminal):
+```bash
+cd client
+npm run dev
+```
+Open the address Vite prints (typically `http://localhost:5173`).
+
+**Quick check the backend is alive and can reach the database:**
+```bash
+curl http://localhost:4000/healthz
+```
+should return `{"status":"ok"}`.
+
+```bash
+curl http://localhost:4000/api/quests
+```
+should return JSON — a list of quests.
+
+## 4. Features and usage
+
+- **Spin for a quest** — draw a random quest from the pool. Presets are
+  weighted by rarity (common quests are far more likely than legendary
+  ones); if you've added your own quests, there's a separate chance to draw
+  one of those instead.
+- **Add a quest** — add your own custom quest to the pool. User-added quests
+  always get a `unique` rarity, separate from the preset tiers.
+- **Complete a quest** — mark a drawn quest as done. Each completion is
+  logged, so the same quest can be completed more than once over time.
+- **View history** — see a log of everything you've completed and when.
+
+**Main API endpoints:**
+
+| Method | Path | What it does |
+|---|---|---|
+| `GET` | `/healthz` | Health check — confirms the API is up and can reach the database |
+| `GET` | `/api/quests` | List quests (presets, plus your own if a user id is provided) |
+| `GET` | `/api/quests/spin` | Draw one random quest (rarity-weighted) |
+| `POST` | `/api/quests` | Add a new user quest (`{ text, category }`) |
+| `PATCH` | `/api/quests/:id/complete` | Mark a quest as completed |
+| `DELETE` | `/api/quests/:id` | Delete a quest you added |
+| `GET` | `/api/history` | List your completed-quest history |
+
+## 5. Project structure
+
+```
+Bodemmaxing/
+├── client/                 # React + Vite frontend
+│   └── src/
+│       ├── api/            # API client: httpApi.js (real), mockApi.js (demo), index.js (switch)
+│       ├── components/     # SpinScreen, AddQuestScreen, HistoryScreen, DemoNotice
+│       ├── App.jsx
+│       └── main.jsx
+├── server/
+│   ├── db/
+│   │   ├── pool.js         # Postgres connection pool
+│   │   ├── schema.sql      # Table definitions
+│   │   └── seed.sql        # 50 preset quests
+│   ├── questsRepo.js       # Data-access layer + weighted spin logic
+│   ├── server.js           # Express app and routes
+│   └── .env.example
+├── docs/                   # Course-required planning/design docs
+├── journal/                # Weekly learning log entries
+├── REPORT.md                # Weekly increment reports
+├── AI-USAGE.md
+└── README.md
+```
+
+## 6. Screenshots
+
+<img width="759" height="701" alt="image" src="https://github.com/user-attachments/assets/b16207db-452e-46a4-9378-cc4daabe6763" />
+<img width="818" height="738" alt="image" src="https://github.com/user-attachments/assets/778123d3-cfc0-46dc-b888-0834b3020543" />
+<img width="702" height="540" alt="image" src="https://github.com/user-attachments/assets/761d2e1f-afac-47de-96c0-6fb79fdcb3d5" />
 
 ## Demo mode
 
-This repository can run two ways, chosen by one environment variable at **build**
-time.
-
-**Demo mode is the default.** Only the exact string `false` turns it off, so a
-forgotten or mistyped variable leaves you on the simulated backend with a visible
-notice rather than on a silently broken build.
+This repository can run two ways, chosen by one environment variable at
+**build** time.
 
 | `VITE_USE_MOCK_API` | What happens |
 | --- | --- |
-| unset, or `true` | The client answers its own requests from `localStorage`. No server, no database, nothing shared between visitors. This is what the template ships with, so the GitHub Pages link works on day one. |
+| unset, or `true` | The client answers its own requests from `localStorage`. No server, no database, nothing shared between visitors. This is what the GitHub Pages link runs by default. |
 | `false` | The client calls the Express API at `VITE_API_BASE_URL`, which reads and writes real PostgreSQL. |
 
-**Demo mode is a starting point and a fallback, not a finished project.** Your
-finals submission is all three pieces deployed and talking to each other. Demo
-mode is there so you can build the interface in week one before the API exists,
-and so you have something to show if a free tier is asleep during your demo.
+GitHub Pages serves files and cannot run Node, so the API and database live
+elsewhere. Current status:
 
-GitHub Pages serves files and cannot run Node, so the API and the database can
-never live there. They go somewhere else:
-
-| Piece | Options |
+| Piece | Status |
 | --- | --- |
-| **API** | Render, Railway, Fly.io, Koyeb, a VPS, or [self-hosted behind a tunnel](../content/extending-your-app/11-self-hosting.md) |
-| **Database** | Neon, Supabase, Railway, Aiven, or your own PostgreSQL |
+| **Client** | Deployed to GitHub Pages |
+| **API** | Built and fully tested locally; hosting (Render/Railway) not yet set up |
+| **Database** | Live, hosted on [Neon](https://neon.tech) |
 
-`content/extending-your-app/` in your course workspace walks through all of it.
-Page 10 is the decision page if you do not know which to pick.
+## 7. Known issues and next steps
 
-## Running it yourself
+**Known issues:**
+- No authentication — user identity is currently a lightweight per-browser id
+  passed as a header, not real login. Fine for this project's scope, but
+  worth flagging as a simplification.
+- The self-hosted Docker path (`compose.yml`) is untested — development has
+  used a hosted Postgres instance (Neon) instead, after running into a
+  BIOS-level virtualization block trying to get Docker running locally.
+- A couple of seeded preset quests have minor text/spacing typos from an
+  earlier copy-paste; not yet cleaned up.
+- Frontend is functional but unstyled — no gashapon spin animation or
+  rarity-based visual styling yet.
 
-**The client only, in demo mode.** No database needed.
-
-    cd client
-    npm install
-    cp .env.example .env        # VITE_USE_MOCK_API stays true
-    npm run dev                 # http://localhost:5173
-
-**The whole stack.** Needs a PostgreSQL, either local or hosted.
-
-    # 1. the database
-    docker run --name my-pg -e POSTGRES_PASSWORD=devpassword \
-      -e POSTGRES_DB=haunted -p 5432:5432 -d postgres:17
-
-    # 2. the API
-    cd server
-    npm install
-    cp .env.example .env        # check DATABASE_URL
-    npm run db:reset            # creates the tables and adds sample rows
-    npm run dev                 # http://localhost:3000
-
-    # 3. the client, in another terminal
-    cd client
-    npm install
-    cp .env.example .env
-    # set VITE_USE_MOCK_API=false
-    npm run dev
-
-Check the API on its own before you blame the client:
-
-    curl http://localhost:3000/healthz     # is the process alive
-    curl http://localhost:3000/readyz      # is the database reachable
-    curl http://localhost:3000/api/sightings
-
-## Environment variables
-
-None of these are committed. `.env.example` in each folder lists them with
-placeholder values.
-
-| Name | Where | What it is |
-| --- | --- | --- |
-| `DATABASE_URL` | server | PostgreSQL connection string. Contains a password |
-| `CORS_ORIGINS` | server | comma-separated origins allowed to call the API |
-| `NODE_ENV` | server | `production` on your host |
-| `PORT` | server | **set by the host**, do not set it yourself |
-| `VITE_USE_MOCK_API` | client, at build time | only `false` turns demo mode off; unset means on |
-| `VITE_API_BASE_URL` | client, at build time | your API's public URL, no trailing slash |
-
-Every `VITE_` value is compiled into the built JavaScript and is **public**.
-Never put a key, a password or a connection string in one.
-
-## Deploying
-
-**Client, to GitHub Pages.** Already wired up in
-`.github/workflows/deploy-pages.yml`. Two one-time steps:
-
-1. **Settings > Pages > Build and deployment > Source: GitHub Actions.** Without
-   this the workflow goes green and publishes nothing.
-2. Nothing else, until your API is live. Demo mode is the default, so the first
-   deploy works on its own. When the API is up, add `VITE_USE_MOCK_API` = `false`
-   and `VITE_API_BASE_URL` under **Settings > Secrets and variables > Actions >
-   Variables**, then re-run the workflow.
-
-The repository must be **public** for Pages to serve it on a free account.
-
-**API and database.** Not automated here, because most hosts deploy straight from
-your repository with no workflow at all. Point your host at the `server/` folder,
-set the environment variables in its dashboard, and run `server/db/schema.sql`
-once against the hosted database.
-
-## Project structure
-
-    client/          React front end, built by Vite
-      src/api/       ONE interface, two implementations, chosen by a variable
-      src/components/
-    server/          Express API
-      db/            pool, schema.sql, seed.sql, and a runner for them
-    compose.yml      only if you self-host
-    docs/            your planning documents and weekly reports
+**Next steps:**
+- Deploy the Express API to a real host (Render or Railway) so the live
+  GitHub Pages site can run against the real database instead of demo mode.
+- Style the spin animation and rarity visuals.
+- Add real screenshots and a demo video once the UI is polished.
+- Clean up the typo'd seed entries and reconsider the tone of a couple of
+  the "legendary" tier quests before final submission.
 
 ## Architecture
 
-Three or four sentences, or a small diagram. Which piece talks to which, and
-where each one is hosted.
-
-## What I would do next
-
-Three honest bullets. This paragraph is worth more than it looks.
+The React client (Vite, deployed to GitHub Pages) talks to an Express API
+over HTTP, which is the only thing that talks to PostgreSQL directly. The
+database is hosted on Neon. Locally, the client can run against either a
+simulated in-browser backend (`mockApi.js`) or the real API (`httpApi.js`) —
+chosen by one build-time environment variable — so the interface can be
+demoed even before the API is deployed publicly.
 
 ## Author
 
-Your name, and a link. Course and section.
+Pagcu, Carl Gaebriel J. (Gpagcu), HAU-6APSI.
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Put your own name in it.
+MIT, see [LICENSE].
+
+---
+
+Parts of this project's setup, debugging, and documentation were assisted by
+AI (Claude). See `AI-USAGE.md` for details.
