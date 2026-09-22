@@ -49,7 +49,7 @@ export default function SpinScreen() {
   return (
     <section className="card">
       <h2>Spin for a quest</h2>
-      <p className="muted">Bored? Pull the lever and see what you get.</p>
+      <p className="muted">Bored? Push the button and see what you get.</p>
 
       {error && (
         <p className="error" role="alert">
