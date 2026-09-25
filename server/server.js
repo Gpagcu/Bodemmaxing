@@ -44,6 +44,16 @@ function getUserId(req) {
 
 // Purely cosmetic — so a visitor (or grader) opening the bare API URL sees
 // something informative instead of Express's default "Cannot GET /".
+// TEMPORARY — remove once CORS is confirmed working. Shows exactly what
+// this running process actually sees for CORS_ORIGINS, to rule out
+// dashboard copy/paste or formatting issues.
+app.get('/debug/cors', (req, res) => {
+  res.json({
+    raw: process.env.CORS_ORIGINS || null,
+    parsed: allowedOrigins,
+  });
+});
+
 app.get('/', (req, res) => {
   res.json({
     name: 'Bordemmaxing API',
