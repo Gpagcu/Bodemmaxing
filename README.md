@@ -1,7 +1,7 @@
 # Bordemmaxing
 
-**Repository:** https://github.com/Gpagcu/Bodemmaxing
-**Live site:** https://gpagcu.github.io/Bodemmaxing/
+**Repository:** https://github.com/Gpagcu/Bordemmaxing
+**Live site:** https://gpagcu.github.io/Bordemmaxing/
 **API:** _not yet deployed — running locally at `http://localhost:4000/healthz` during development_
 
 > **This deployment is running in demo mode.** The interface is real; the backend
