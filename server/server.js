@@ -158,4 +158,4 @@ app.get('/api/history', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Bordemmaxing API running on port ${PORT} (${isProd ? 'production' : 'development'})`);
-});
+}); 
