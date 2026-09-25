@@ -18,6 +18,23 @@ const HISTORY_KEY = 'final-project:quest-history'
 // the day you switch to the real API.
 const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms))
 
+// The real API asks Gemini for a suggestion. There is no API key available
+// in the browser (and there shouldn't be — it belongs on the server), so
+// the demo picks from a small fixed pool instead. This keeps the button
+// working in demo mode without pretending to call a real AI.
+const CANNED_IDEAS = [
+  { text: 'Invent a secret handshake and teach it to someone', category: 'social' },
+  { text: 'Balance a spoon on your nose for as long as you can', category: 'weird' },
+  { text: 'Sketch the view outside your nearest window', category: 'creative' },
+  { text: 'Do wall sits until your legs shake', category: 'physical' },
+  { text: 'Write a one-star review of a boring Tuesday', category: 'creative' },
+]
+
+export async function generateQuestIdea() {
+  await delay()
+  return CANNED_IDEAS[Math.floor(Math.random() * CANNED_IDEAS.length)]
+}
+
 // Mirrors the rarity weighting used server-side, so the demo build "feels"
 // the same as the real API even though it never talks to it.
 const RARITY_WEIGHTS = { common: 45, uncommon: 28, rare: 15, epic: 9, legendary: 3 }

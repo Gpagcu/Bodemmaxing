@@ -32,6 +32,7 @@ export const {
   listQuests,
   spinQuest,
   createQuest,
+  generateQuestIdea,
   completeQuest,
   deleteQuest,
   listHistory,

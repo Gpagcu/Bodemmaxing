@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listQuests, createQuest, deleteQuest } from '../api'
+import { listQuests, createQuest, deleteQuest, generateQuestIdea } from '../api'
 
 const EMPTY_FORM = { text: '', category: '' }
 
@@ -9,6 +9,8 @@ export default function AddQuestScreen() {
   const [error, setError] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generatedQuest, setGeneratedQuest] = useState(null)
 
   async function load() {
     setStatus('loading')
@@ -46,9 +48,28 @@ export default function AddQuestScreen() {
     }
   }
 
+  async function handleGenerate() {
+    setGenerating(true)
+    setError(null)
+    try {
+      const idea = await generateQuestIdea()
+      const created = await createQuest({
+        text: idea.text,
+        category: idea.category || null,
+      })
+      setRows([created, ...rows])
+      setGeneratedQuest(created)
+    } catch (caught) {
+      setError(caught)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   async function handleDelete(id) {
     const previous = rows
     setRows(rows.filter((row) => row.id !== id))   // optimistic
+    if (generatedQuest?.id === id) setGeneratedQuest(null)
     try {
       await deleteQuest(id)
     } catch (caught) {
@@ -90,10 +111,24 @@ export default function AddQuestScreen() {
           placeholder="creative, physical, social, weird..."
         />
 
-        <button type="submit" disabled={saving}>
-          {saving ? 'Adding...' : 'Add quest'}
-        </button>
+        <div className="form-actions">
+          <button type="submit" disabled={saving}>
+            {saving ? 'Adding...' : 'Add quest'}
+          </button>
+          <button type="button" onClick={handleGenerate} disabled={generating} className="secondary">
+            {generating ? 'Generating...' : '✨ Generate & add with AI'}
+          </button>
+        </div>
       </form>
+
+      {generatedQuest && (
+        <div className="quest-result rarity-unique">
+          <span className="rarity-badge rarity-unique">unique · AI-generated</span>
+          <p className="quest-text">{generatedQuest.text}</p>
+          {generatedQuest.category && <p className="muted">Category: {generatedQuest.category}</p>}
+          <p className="muted">✓ Added to your quests</p>
+        </div>
+      )}
 
       {status === 'loading' && <p className="muted">Loading your quests...</p>}
 
@@ -120,3 +155,4 @@ export default function AddQuestScreen() {
     </section>
   )
 }
+

@@ -204,6 +204,26 @@ form button {
   margin-top: 1rem;
 }
 
+.form-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.form-actions button {
+  margin-top: 1rem;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+
+button.secondary:hover:not(:disabled) {
+  background: rgba(255, 111, 145, 0.12);
+}
+
 /* --- lists --- */
 .list {
   list-style: none;
@@ -392,6 +412,14 @@ button {
   }
 
   .spin-button {
+    width: 100%;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
     width: 100%;
   }
 

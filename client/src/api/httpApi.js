@@ -45,6 +45,9 @@ export const spinQuest = () => request('/api/quests/spin')
 export const createQuest = (input) =>
   request('/api/quests', { method: 'POST', body: JSON.stringify(input) })
 
+export const generateQuestIdea = () =>
+  request('/api/quests/generate', { method: 'POST' })
+
 export const completeQuest = (id) =>
   request(`/api/quests/${id}/complete`, { method: 'PATCH' })
 

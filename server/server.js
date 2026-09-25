@@ -12,7 +12,8 @@ import {
   getHistory,
   deleteUserQuest,
 } from './questsRepo.js';
-import pool from './db/pool.js';
+import pool from './db/pool.js';           // ✗ missing ./
+import { generateQuestIdea } from './aiService.js';  // ✗ missing ./
 
 // Load .env from server/.env regardless of where `node` was run from.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -70,6 +71,19 @@ app.get('/api/quests/spin', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to spin for a quest' });
+  }
+});
+
+// Suggests a quest via Gemini. This only generates a suggestion — it does
+// NOT save anything. The user still reviews/edits it and hits the normal
+// "Add quest" button (POST /api/quests) to actually create it.
+app.post('/api/quests/generate', async (req, res) => {
+  try {
+    const idea = await generateQuestIdea();
+    res.json(idea);
+  } catch (err) {
+    console.error(err);
+    res.status(502).json({ error: 'Could not generate a quest idea right now. Try again.' });
   }
 });
 
