@@ -42,6 +42,16 @@ function getUserId(req) {
   return req.query.userId || req.headers['x-user-id'] || 'demo-user';
 }
 
+// Purely cosmetic — so a visitor (or grader) opening the bare API URL sees
+// something informative instead of Express's default "Cannot GET /".
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Bordemmaxing API',
+    status: 'running',
+    endpoints: ['/healthz', '/api/quests', '/api/quests/spin', '/api/history'],
+  });
+});
+
 // Used by deployment platforms (and the course template's own docs) to check
 // the API is up and can actually reach the database, not just that the
 // process is running.
