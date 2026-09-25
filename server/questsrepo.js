@@ -10,8 +10,13 @@ const RARITY_WEIGHTS = {
   legendary: 3,
 };
 
-// Chance that a spin pulls from the user's own added ("unique") quests instead
-// of the rarity-weighted preset pool. Only applies if the user has added any.
+// Chance that a spin pulls from the pool of user-added ("unique") quests
+// instead of the rarity-weighted preset pool. This project has no real
+// accounts — user_id is just a per-browser id — so the unique pool is
+// shared globally rather than scoped to whoever happens to be spinning.
+// Scoping it per-browser caused a confusing bug during testing: quests
+// added in one browser session were invisible (and undrawable) in another,
+// making the pool look far smaller than it actually was.
 const UNIQUE_PULL_CHANCE = 0.15;
 
 function pickWeightedRarity(availableRarities) {
@@ -29,7 +34,7 @@ function pickWeightedRarity(availableRarities) {
   return pool[pool.length - 1].rarity; // fallback for rounding edge cases
 }
 
-export async function getAllQuests({ userId, rarity, category } = {}) {
+export async function getAllQuests({ rarity, category } = {}) {
   const conditions = [];
   const values = [];
 
@@ -40,12 +45,6 @@ export async function getAllQuests({ userId, rarity, category } = {}) {
   if (category) {
     values.push(category);
     conditions.push(`category = $${values.length}`);
-  }
-  if (userId) {
-    values.push(userId);
-    conditions.push(`(is_preset = TRUE OR user_id = $${values.length})`);
-  } else {
-    conditions.push(`is_preset = TRUE`);
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -66,23 +65,18 @@ export async function addUserQuest({ text, category, userId }) {
   return rows[0];
 }
 
-export async function spinForQuest(userId) {
-  // Decide whether to pull from the user's unique pool
-  if (userId) {
-    const { rows: uniqueRows } = await pool.query(
-      `SELECT COUNT(*)::int AS count FROM quests WHERE user_id = $1 AND rarity = 'unique'`,
-      [userId]
-    );
-    const hasUnique = uniqueRows[0].count > 0;
+export async function spinForQuest() {
+  // Decide whether to pull from the (global) unique pool
+  const { rows: uniqueRows } = await pool.query(
+    `SELECT COUNT(*)::int AS count FROM quests WHERE rarity = 'unique'`
+  );
+  const hasUnique = uniqueRows[0].count > 0;
 
-    if (hasUnique && Math.random() < UNIQUE_PULL_CHANCE) {
-      const { rows } = await pool.query(
-        `SELECT * FROM quests WHERE user_id = $1 AND rarity = 'unique'
-         ORDER BY RANDOM() LIMIT 1`,
-        [userId]
-      );
-      return rows[0];
-    }
+  if (hasUnique && Math.random() < UNIQUE_PULL_CHANCE) {
+    const { rows } = await pool.query(
+      `SELECT * FROM quests WHERE rarity = 'unique' ORDER BY RANDOM() LIMIT 1`
+    );
+    return rows[0];
   }
 
   // Otherwise pull from the rarity-weighted preset pool
@@ -121,22 +115,23 @@ export async function completeQuest(id, userId) {
   return rows[0];
 }
 
-export async function getHistory(userId) {
+// History is also shown globally, for the same reason as the unique pool —
+// there's no real login, so scoping "your" history to a browser-local id
+// just hides real data across sessions/devices.
+export async function getHistory() {
   const { rows } = await pool.query(
     `SELECT qh.id, qh.completed_at, q.text, q.rarity, q.category
      FROM quest_history qh
      JOIN quests q ON q.id = qh.quest_id
-     WHERE qh.user_id = $1
-     ORDER BY qh.completed_at DESC`,
-    [userId]
+     ORDER BY qh.completed_at DESC`
   );
   return rows;
 }
 
-export async function deleteUserQuest(id, userId) {
+export async function deleteUserQuest(id) {
   const { rowCount } = await pool.query(
-    `DELETE FROM quests WHERE id = $1 AND user_id = $2`,
-    [id, userId]
+    `DELETE FROM quests WHERE id = $1 AND is_preset = FALSE`,
+    [id]
   );
   return rowCount > 0;
 }

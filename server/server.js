@@ -12,8 +12,8 @@ import {
   getHistory,
   deleteUserQuest,
 } from './questsRepo.js';
-import pool from './db/pool.js';           // ✗ missing ./
-import { generateQuestIdea } from './aiService.js';  // ✗ missing ./
+import pool from './db/pool.js';
+import { generateQuestIdea } from './aiService.js';
 
 // Load .env from server/.env regardless of where `node` was run from.
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,6 +35,9 @@ const isProd = process.env.NODE_ENV === 'production';
 
 // For this course project, a simple query-param or header user id is enough —
 // no full auth system needed. Swap for real auth later if you want.
+// getUserId still tags who added a quest or completed one, purely as a
+// record — it no longer restricts what anyone can see or spin, since this
+// project has no real accounts.
 function getUserId(req) {
   return req.query.userId || req.headers['x-user-id'] || 'demo-user';
 }
@@ -55,7 +58,7 @@ app.get('/healthz', async (req, res) => {
 app.get('/api/quests', async (req, res) => {
   try {
     const { rarity, category } = req.query;
-    const quests = await getAllQuests({ userId: getUserId(req), rarity, category });
+    const quests = await getAllQuests({ rarity, category });
     res.json(quests);
   } catch (err) {
     console.error(err);
@@ -65,7 +68,7 @@ app.get('/api/quests', async (req, res) => {
 
 app.get('/api/quests/spin', async (req, res) => {
   try {
-    const quest = await spinForQuest(getUserId(req));
+    const quest = await spinForQuest();
     if (!quest) return res.status(404).json({ error: 'No quests available' });
     res.json(quest);
   } catch (err) {
@@ -114,8 +117,8 @@ app.patch('/api/quests/:id/complete', async (req, res) => {
 
 app.delete('/api/quests/:id', async (req, res) => {
   try {
-    const deleted = await deleteUserQuest(req.params.id, getUserId(req));
-    if (!deleted) return res.status(404).json({ error: 'Quest not found or not yours to delete' });
+    const deleted = await deleteUserQuest(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Quest not found, or it is a preset and cannot be deleted' });
     res.status(204).end();
   } catch (err) {
     console.error(err);
@@ -125,7 +128,7 @@ app.delete('/api/quests/:id', async (req, res) => {
 
 app.get('/api/history', async (req, res) => {
   try {
-    const history = await getHistory(getUserId(req));
+    const history = await getHistory();
     res.json(history);
   } catch (err) {
     console.error(err);
