@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { listHistory } from '../api'
+import { listHistory, resetHistory } from '../api'
 
 export default function HistoryScreen() {
   const [status, setStatus] = useState('loading')   // loading | ready | error
   const [rows, setRows] = useState([])
   const [error, setError] = useState(null)
+  const [resetting, setResetting] = useState(false)
 
   async function load() {
     setStatus('loading')
@@ -22,9 +23,32 @@ export default function HistoryScreen() {
     load()
   }, [])
 
+  async function handleReset() {
+    if (!window.confirm('Reset all history? This clears every completed quest and cannot be undone.')) {
+      return
+    }
+    setResetting(true)
+    setError(null)
+    try {
+      await resetHistory()
+      setRows([])
+    } catch (caught) {
+      setError(caught)
+    } finally {
+      setResetting(false)
+    }
+  }
+
   return (
     <section>
-      <h2>History</h2>
+      <div className="row-head">
+        <h2>History</h2>
+        {rows.length > 0 && (
+          <button onClick={handleReset} disabled={resetting} className="secondary">
+            {resetting ? 'Resetting...' : 'Reset history'}
+          </button>
+        )}
+      </div>
 
       {error && (
         <p className="error" role="alert">
@@ -58,3 +82,4 @@ export default function HistoryScreen() {
     </section>
   )
 }
+

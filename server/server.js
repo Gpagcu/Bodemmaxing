@@ -11,6 +11,7 @@ import {
   completeQuest,
   getHistory,
   deleteUserQuest,
+  resetHistory,
 } from './questsrepo.js';
 import pool from './db/pool.js';
 import { generateQuestIdea } from './aiService.js';
@@ -156,6 +157,19 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
+// Clears the completion log and resets every quest's completion state —
+// a deliberate "start fresh" action, not something that happens by accident
+// from the normal spin/complete flow.
+app.delete('/api/history', async (req, res) => {
+  try {
+    await resetHistory();
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to reset history' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Bordemmaxing API running on port ${PORT} (${isProd ? 'production' : 'development'})`);
-}); 
+});

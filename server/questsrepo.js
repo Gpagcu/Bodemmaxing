@@ -135,3 +135,11 @@ export async function deleteUserQuest(id) {
   );
   return rowCount > 0;
 }
+
+// Clears the completion log AND resets every quest's completion state, so
+// testing (or just wanting a fresh start) doesn't leave quests permanently
+// marked "done" forever with no way back.
+export async function resetHistory() {
+  await pool.query(`DELETE FROM quest_history`);
+  await pool.query(`UPDATE quests SET is_completed = FALSE, date_completed = NULL`);
+}

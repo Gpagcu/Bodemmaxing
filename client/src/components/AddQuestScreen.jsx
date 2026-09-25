@@ -67,6 +67,9 @@ export default function AddQuestScreen() {
   }
 
   async function handleDelete(id) {
+    if (!window.confirm('Delete this quest? This removes it permanently — it cannot be undone.')) {
+      return
+    }
     const previous = rows
     setRows(rows.filter((row) => row.id !== id))   // optimistic
     if (generatedQuest?.id === id) setGeneratedQuest(null)
@@ -122,11 +125,24 @@ export default function AddQuestScreen() {
       </form>
 
       {generatedQuest && (
-        <div className="quest-result rarity-unique">
-          <span className="rarity-badge rarity-unique">unique · AI-generated</span>
-          <p className="quest-text">{generatedQuest.text}</p>
-          {generatedQuest.category && <p className="muted">Category: {generatedQuest.category}</p>}
-          <p className="muted">✓ Added to your quests</p>
+        <div className="modal-overlay" onClick={() => setGeneratedQuest(null)}>
+          <div
+            className="modal quest-result rarity-unique"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close"
+              onClick={() => setGeneratedQuest(null)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <span className="rarity-badge rarity-unique">unique · AI-generated</span>
+            <p className="quest-text">{generatedQuest.text}</p>
+            {generatedQuest.category && <p className="muted">Category: {generatedQuest.category}</p>}
+            <p className="muted">✓ Added to your quests</p>
+          </div>
         </div>
       )}
 

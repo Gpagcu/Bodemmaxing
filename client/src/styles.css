@@ -292,6 +292,53 @@ footer {
 .quest-result.rarity-legendary { border-color: var(--rarity-legendary); }
 .quest-result.rarity-unique { border-color: var(--rarity-unique); }
 
+/* --- modal / popup --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 10, 20, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 50;
+}
+
+.modal {
+  position: relative;
+  max-width: 420px;
+  width: 100%;
+  margin-top: 0;
+  animation: capsule-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  border: 1px solid var(--border);
+}
+
+.modal-close:hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal {
+    animation: none;
+  }
+}
+
 /* --- the spin button and capsule: the one bold animated moment --- */
 .spin-button {
   display: block;

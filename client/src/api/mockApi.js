@@ -172,3 +172,10 @@ export async function listHistory() {
   await delay()
   return readHistory()
 }
+
+export async function resetHistory() {
+  await delay()
+  writeHistory([])
+  const rows = readQuests().map((row) => ({ ...row, is_completed: false, date_completed: null }))
+  writeQuests(rows)
+}

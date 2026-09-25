@@ -36,4 +36,5 @@ export const {
   completeQuest,
   deleteQuest,
   listHistory,
+  resetHistory,
 } = implementation
