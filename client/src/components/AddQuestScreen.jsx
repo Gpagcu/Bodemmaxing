@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listQuests, createQuest, deleteQuest, generateQuestIdea } from '../api'
+import { listQuests, createQuest, deleteQuest, generateQuestIdea, toggleQuestActive } from '../api'
 
 const EMPTY_FORM = { text: '', category: '' }
 
@@ -63,6 +63,18 @@ export default function AddQuestScreen() {
       setError(caught)
     } finally {
       setGenerating(false)
+    }
+  }
+
+  async function handleToggleActive(id) {
+    const previous = rows
+    // Optimistic flip, so the toggle feels instant.
+    setRows(rows.map((row) => (row.id === id ? { ...row, is_active: !row.is_active } : row)))
+    try {
+      await toggleQuestActive(id)
+    } catch (caught) {
+      setRows(previous)   // put it back on failure
+      setError(caught)
     }
   }
 
@@ -155,13 +167,18 @@ export default function AddQuestScreen() {
       {status === 'ready' && rows.length > 0 && (
         <ul className="list">
           {rows.map((row) => (
-            <li key={row.id} className="card">
+            <li key={row.id} className={row.is_active ? 'card' : 'card inactive'}>
               <div className="row-head">
                 <p className="quest-text">{row.text}</p>
-                <span className="rarity-badge rarity-unique">unique</span>
+                <span className="rarity-badge rarity-unique">
+                  {row.is_active ? 'unique' : 'unique · hidden'}
+                </span>
               </div>
               {row.category && <p className="muted">Category: {row.category}</p>}
               <footer>
+                <button onClick={() => handleToggleActive(row.id)} className="secondary">
+                  {row.is_active ? 'Hide from spins' : 'Unhide'}
+                </button>
                 <button onClick={() => handleDelete(row.id)}>Delete</button>
               </footer>
             </li>

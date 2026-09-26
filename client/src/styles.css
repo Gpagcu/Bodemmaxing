@@ -247,9 +247,19 @@ footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   margin-top: 0.75rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.card.inactive {
+  opacity: 0.55;
+}
+
+.card.inactive .quest-text {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
 }
 
 /* --- rarity badges: the core information system --- */
