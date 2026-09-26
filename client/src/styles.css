@@ -419,6 +419,65 @@ footer {
   100% { transform: scale(1); }
 }
 
+/* --- the gacha wheel: replaces the old plain capsule with a proper
+   spinning color wheel that decelerates and lands on the drawn rarity --- */
+.gacha-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 1.25rem 0 0.5rem;
+  position: relative;
+}
+
+.gacha-wheel {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 4px solid var(--surface-raised);
+  box-shadow: 0 0 0 2px var(--border), 0 6px 18px rgba(0, 0, 0, 0.4);
+  background: conic-gradient(
+    var(--rarity-common) 0deg 60deg,
+    var(--rarity-uncommon) 60deg 120deg,
+    var(--rarity-rare) 120deg 180deg,
+    var(--rarity-epic) 180deg 240deg,
+    var(--rarity-legendary) 240deg 300deg,
+    var(--rarity-unique) 300deg 360deg
+  );
+  position: relative;
+}
+
+/* Center hub, purely decorative — gives it a real "wheel" look rather than
+   a flat pie chart. */
+.gacha-wheel::after {
+  content: '';
+  position: absolute;
+  inset: 38%;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+}
+
+/* Fixed pointer marking the winning segment — does NOT rotate with the wheel. */
+.gacha-pointer {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 16px solid var(--text);
+  z-index: 2;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gacha-wheel {
+    transition: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .capsule.spinning,
   .capsule.landed {
@@ -466,6 +525,11 @@ button {
   .capsule {
     width: 60px;
     height: 60px;
+  }
+
+  .gacha-wheel {
+    width: 108px;
+    height: 108px;
   }
 
   .spin-button {
